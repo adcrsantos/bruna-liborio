@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Processador de Formulário — Bruna Libório</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #fdf6f0; min-height: 100vh; padding: 1rem; }
+  .container { max-width: 540px; margin: 0 auto; }
+  .header { text-align: center; padding: 1.5rem 0 1rem; border-bottom: 1px solid #f0d8d0; margin-bottom: 1.5rem; }
+  .header h1 { font-size: 20px; font-weight: 600; color: #5a1a2a; margin-bottom: 4px; }
+  .header p { font-size: 13px; color: #a07080; }
+  .badge { display: inline-block; font-size: 11px; padding: 3px 10px; border-radius: 99px; background: #fce8e0; color: #a03050; border: 1px solid #f0b8b0; margin-top: 8px; }
+  .section { margin-bottom: 1.5rem; }
+  .section-title { font-size: 11px; color: #a07080; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 10px; }
+  .card { background: #fff; border: 1px solid #f0d8d0; border-radius: 16px; padding: 1rem 1.25rem; font-size: 13px; color: #a07080; line-height: 1.7; }
+  .card strong { color: #5a1030; }
+  .step { display: flex; gap: 12px; margin-bottom: 8px; align-items: flex-start; }
+  .step-num { width: 22px; height: 22px; border-radius: 50%; background: #f9d0dc; color: #a03050; font-size: 12px; font-weight: 600; display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-top: 1px; }
+  .field { display: flex; flex-direction: column; gap: 5px; }
+  .field label { font-size: 12px; color: #a07080; font-weight: 500; }
+  .field textarea {
+    width: 100%; padding: 12px; border: 1px solid #f0d0c8; border-radius: 12px;
+    font-size: 13px; background: #fdf8f6; color: #3a1020; outline: none;
+    font-family: 'Courier New', monospace; height: 200px; resize: vertical; line-height: 1.6;
+  }
+  .field textarea:focus { border-color: #d06080; background: #fff; }
+  .exemplo-btn {
+    font-size: 12px; padding: 5px 14px; border-radius: 99px;
+    border: 1px dashed #f0b0b8; cursor: pointer;
+    background: transparent; color: #c07090; margin-top: 8px;
+    font-family: inherit;
+  }
+  .exemplo-btn:hover { color: #a03050; border-color: #d08090; }
+  .btn-g {
+    width: 100%; padding: 13px; border-radius: 12px;
+    background: linear-gradient(135deg, #c05070, #a03050);
+    color: #fff; border: none; font-size: 15px; font-weight: 600;
+    cursor: pointer; margin-top: 0.5rem; letter-spacing: 0.02em;
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+    font-family: inherit;
+  }
+  .btn-g:hover { background: linear-gradient(135deg, #a03050, #801030); }
+  .btn-g:disabled { opacity: 0.5; cursor: not-allowed; }
+  .btn-s {
+    flex: 0 0 auto; padding: 10px 16px; border-radius: 12px;
+    background: transparent; border: 1px solid #f0d0c8;
+    font-size: 13px; cursor: pointer; color: #a07080; font-family: inherit;
+  }
+  .btn-s:hover { color: #5a1030; border-color: #d09090; }
+  .loading { display: none; align-items: center; gap: 10px; padding: 1rem; color: #a07080; font-size: 14px; justify-content: center; }
+  .loading.show { display: flex; }
+  .spinner { width: 20px; height: 20px; border: 2px solid #f0d0c8; border-top-color: #c05070; border-radius: 50%; animation: spin 0.8s linear infinite; flex-shrink: 0; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .result-card { background: #fff; border: 1px solid #f0d8d0; border-radius: 16px; padding: 1rem 1.25rem; display: none; }
+  .tab-row { display: flex; gap: 8px; margin-bottom: 1rem; }
+  .tab { font-size: 13px; padding: 6px 16px; border-radius: 99px; border: 1px solid #f0d0c8; cursor: pointer; background: #fdf8f6; color: #a07080; }
+  .tab.active { background: #f9d0dc; border-color: #c05070; color: #5a1030; font-weight: 500; }
+  .tab-content { display: none; }
+  .tab-content.show { display: block; }
+  .ficha { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 16px; margin-bottom: 1rem; }
+  .ficha-item { display: flex; flex-direction: column; gap: 2px; }
+  .ficha-label { font-size: 11px; color: #c09090; text-transform: uppercase; letter-spacing: 0.05em; }
+  .ficha-val { font-size: 14px; color: #3a1020; }
+  .divider { height: 1px; background: #f0d8d0; margin: 1rem 0; }
+  .summary { background: #fdf6f0; border-radius: 12px; padding: 1rem; margin-bottom: 1rem; border: 1px solid #f0d8d0; }
+  .s-row { display: flex; justify-content: space-between; font-size: 14px; padding: 5px 0; border-bottom: 1px solid #fae8e4; }
+  .s-row:last-child { border-bottom: none; }
+  .s-label { color: #a07080; }
+  .s-row.total { font-weight: 600; padding-top: 10px; }
+  .total-val { color: #a0304a; font-size: 22px; font-weight: 700; }
+  .alert { background: #fef8e0; border: 1px solid #f0d080; border-radius: 12px; padding: 10px 14px; font-size: 13px; color: #806020; margin-bottom: 1rem; display: none; line-height: 1.6; }
+  .orcamento-box {
+    background: #fdf6f0; border: 1px solid #f0d0c8; border-radius: 12px;
+    padding: 1rem; font-size: 13px; line-height: 1.75;
+    white-space: pre-wrap; color: #3a1020; font-family: 'Courier New', monospace;
+  }
+  .actions-row { display: flex; gap: 10px; margin-top: 1rem; }
+  .actions-row .btn-g { flex: 1; margin-top: 0; }
+  .copy-btn {
+    width: 100%; padding: 10px; border-radius: 12px; margin-top: 8px;
+    background: #fce8e0; border: 1px solid #f0b8b0; color: #a03050;
+    font-size: 13px; font-weight: 500; cursor: pointer; font-family: inherit;
+    display: flex; align-items: center; justify-content: center; gap: 6px;
+  }
+  .copy-btn:hover { background: #f9d0dc; }
+  .hint { font-size: 11px; color: #c09090; margin-top: 6px; }
+  .footer { text-align: center; font-size: 11px; color: #c09090; padding: 1.5rem 0; }
+  @media(max-width:400px){ .ficha { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="header">
+    <h1>🎂 Bruna Libório Confeitaria</h1>
+    <p>Processador de formulário de orçamento</p>
+    <span class="badge">uso interno · processador</span>
+  </div>
+
+  <div class="section">
+    <div class="section-title">Como usar</div>
+    <div class="card">
+      <div class="step"><div class="step-num">1</div><span>Abra o Google Forms → <strong>Respostas</strong> → clique na resposta do cliente</span></div>
+      <div class="step"><div class="step-num">2</div><span>Selecione todo o texto, copie</span></div>
+      <div class="step" style="margin-bottom:0"><div class="step-num">3</div><span>Cole no campo abaixo e clique em <strong>Processar</strong></span></div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">Respostas do formulário</div>
+    <div class="field">
+      <textarea id="form-input" placeholder="Cole aqui as respostas do formulário...
+
+QUAL O SEU NOME? Ana Lima
+Qual o seu número de telefone com DDD: (79) 99999-0000
+DATA E HORÁRIO DO EVENTO: 15/08/2025 às 18h
+EM QUAL CATEGORIA SE ENCAIXA: CASAMENTO
+EM QUAL CIDADE SERÁ O EVENTO? Aracaju
+SERÁ AQUI NA CONFEITARIA OU UM LOCAL EXTERNO? Local externo
+SE TIVER UM LOCAL, QUAL O ENDEREÇO? Espaço Villa, Av. Beira Mar
+SERVIRÁ QUANTOS CONVIDADOS? 150
+QUANTO PRETENDE INVESTIR? R$ 3.000
+QUAIS AS SUAS PREFERÊNCIAS DE SABORES? Brigadeiro e Nutella
+TEM UMA REFERÊNCIA/INSPIRAÇÃO? Estilo romântico, tons rose gold
+JÁ É NOSSO CLIENTE? COMO DESCOBRIU A CONFEITARIA? Instagram"></textarea>
+    </div>
+    <button class="exemplo-btn" onclick="preencherExemplo()">✨ Preencher com exemplo</button>
+  </div>
+
+  <div class="loading" id="loading">
+    <div class="spinner"></div>
+    <span>Processando as respostas...</span>
+  </div>
+
+  <button class="btn-g" id="processar-btn" onclick="processar()">
+    ⚡ Processar e gerar orçamento
+  </button>
+
+  <div style="height:1.5rem"></div>
+
+  <div class="result-card" id="result-card">
+    <div class="tab-row">
+      <div class="tab active" onclick="switchTab('ficha')">Ficha do pedido</div>
+      <div class="tab" onclick="switchTab('orcamento')">Mensagem WhatsApp</div>
+    </div>
+
+    <div class="tab-content show" id="tab-ficha">
+      <div class="alert" id="alert-box"></div>
+      <div class="ficha" id="ficha-dados"></div>
+      <div class="divider"></div>
+      <div class="summary" id="summary-box"></div>
+      <p class="hint">* Valores de referência — confirmar com Bruna antes do uso</p>
+      <div class="actions-row">
+        <button class="btn-s" onclick="switchTab('orcamento')">Ver mensagem →</button>
+        <button class="btn-g" onclick="copiarOrcamento()">📋 Copiar para WhatsApp</button>
+      </div>
+    </div>
+
+    <div class="tab-content" id="tab-orcamento">
+      <div class="orcamento-box" id="orcamento-box"></div>
+      <button class="copy-btn" id="copy-btn" onclick="copiarOrcamento()">📋 Copiar mensagem</button>
+      <div class="actions-row" style="margin-top:0.5rem">
+        <button class="btn-s" onclick="switchTab('ficha')">← Voltar</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="footer">Bruna Libório Confeitaria · ferramenta interna · v1</div>
+</div>
+
+<script>
+const EXEMPLO = `QUAL O SEU NOME? Ana Lima
+Qual o seu número de telefone com DDD: (79) 99887-0011
+DATA E HORÁRIO DO EVENTO: 12/10/2025 às 19h
+EM QUAL CATEGORIA SE ENCAIXA: CASAMENTO
+EM QUAL CIDADE SERÁ O EVENTO? Aracaju
+SERÁ AQUI NA CONFEITARIA OU UM LOCAL EXTERNO? Local externo
+SE TIVER UM LOCAL, QUAL O ENDEREÇO? Espaço Jardins, Av. Beira Mar, 300
+SERVIRÁ QUANTOS CONVIDADOS? 120
+QUANTO PRETENDE INVESTIR? R$ 2.500
+QUAIS AS SUAS PREFERÊNCIAS DE SABORES? Chocolate belga, Ferrero Rocher e Limão
+TEM UMA REFERÊNCIA/INSPIRAÇÃO? Estilo romântico, tons rose gold e branco
+JÁ É NOSSO CLIENTE? COMO DESCOBRIU A CONFEITARIA? Instagram`;
+
+function preencherExemplo(){ document.getElementById('form-input').value = EXEMPLO; }
+function fmt(v){ return 'R$ ' + Math.round(v).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2}); }
+
+function extrair(texto, chaves){
+  for(const chave of chaves){
+    const re = new RegExp(chave+'[:\\?]?\\s*(.+)', 'i');
+    const m = texto.match(re);
+    if(m && m[1].trim()) return m[1].trim();
+  }
+  return '';
+}
+
+function parseDados(texto){
+  return {
+    nome: extrair(texto,['QUAL O SEU NOME','SEU NOME']),
+    telefone: extrair(texto,['número de telefone','telefone','TELEFONE']),
+    data: extrair(texto,['DATA E HORÁRIO','DATA DO EVENTO','DATA']),
+    categoria: extrair(texto,['EM QUAL CATEGORIA SE ENCAIXA','CATEGORIA']),
+    cidade: extrair(texto,['EM QUAL CIDADE SERÁ O EVENTO','CIDADE']),
+    local: extrair(texto,['SERÁ AQUI NA CONFEITARIA OU UM LOCAL EXTERNO','LOCAL EXTERNO']),
+    endereco: extrair(texto,['SE TIVER UM LOCAL, QUAL O ENDEREÇO','ENDEREÇO','ENDERECO']),
+    convidados: extrair(texto,['SERVIRÁ QUANTOS CONVIDADOS','QUANTOS CONVIDADOS','CONVIDADOS']),
+    budget: extrair(texto,['QUANTO PRETENDE INVESTIR','INVESTIR']),
+    sabores: extrair(texto,['PREFERÊNCIAS DE SABORES','SABORES','PREFERENCIAS']),
+    referencia: extrair(texto,['REFERÊNCIA','REFERENCIA','INSPIRAÇÃO','INSPIRACAO']),
+    como: extrair(texto,['COMO DESCOBRIU','DESCOBRIU']),
+  };
+}
+
+function calcularOrcamento(dados){
+  const n = parseInt(dados.convidados)||50;
+  const cat = (dados.categoria||'').toLowerCase();
+  const sabores = (dados.sabores||'').toLowerCase();
+  const cidade = (dados.cidade||'').toLowerCase();
+
+  let base=320, catLabel='Bolo personalizado';
+  if(cat.includes('casamento')){ base=680; catLabel='Bolo de casamento'; }
+  else if(cat.includes('formatura')){ base=420; catLabel='Bolo de formatura'; }
+  else if(cat.includes('infantil')||cat.includes('aninho')){ base=360; catLabel='Bolo infantil temático'; }
+  else if(cat.includes('noivado')){ base=380; catLabel='Bolo de noivado'; }
+  else if(cat.includes('almoço')||cat.includes('janta')||cat.includes('ceia')||cat.includes('café')||cat.includes('coffe')||cat.includes('chá')){ base=0; catLabel='Mesa de doces / buffet'; }
+
+  let mult=1.0;
+  if(n<=20) mult=0.8;
+  else if(n<=40) mult=1.0;
+  else if(n<=70) mult=1.4;
+  else if(n<=100) mult=1.8;
+  else if(n<=150) mult=2.4;
+  else mult=3.2;
+
+  if(catLabel.includes('Mesa')){
+    if(n<=30) base=280;
+    else if(n<=60) base=480;
+    else if(n<=120) base=780;
+    else base=1400;
+    mult=1;
+  }
+
+  const baseAdj = Math.round(base*mult);
+  let recheioAdd=0;
+  if(sabores.includes('nutella')) recheioAdd+=40;
+  if(sabores.includes('ferrero')) recheioAdd+=50;
+  if(sabores.includes('belga')) recheioAdd+=55;
+  if(sabores.includes('prestígio')||sabores.includes('prestigio')) recheioAdd+=25;
+
+  let entregaAdd=0, entregaLabel='Retirada na loja';
+  if(dados.local&&dados.local.toLowerCase().includes('externo')){
+    if(cidade.includes('aracaju')){ entregaAdd=80; entregaLabel='Entrega em Aracaju'; }
+    else if(cidade.includes('lagarto')){ entregaAdd=40; entregaLabel='Entrega em Lagarto'; }
+    else { entregaAdd=60; entregaLabel='Entrega (a confirmar)'; }
+  }
+
+  return { baseAdj, recheioAdd, entregaAdd, total:baseAdj+recheioAdd+entregaAdd, catLabel, entregaLabel };
+}
+
+function switchTab(t){
+  document.querySelectorAll('.tab').forEach((x,i)=>{
+    x.classList.toggle('active',(i===0&&t==='ficha')||(i===1&&t==='orcamento'));
+  });
+  document.getElementById('tab-ficha').classList.toggle('show',t==='ficha');
+  document.getElementById('tab-orcamento').classList.toggle('show',t==='orcamento');
+}
+
+let orcamentoTexto='';
+
+function processar(){
+  const texto = document.getElementById('form-input').value.trim();
+  if(!texto){ document.getElementById('form-input').focus(); return; }
+
+  document.getElementById('loading').classList.add('show');
+  document.getElementById('processar-btn').disabled=true;
+  document.getElementById('result-card').style.display='none';
+
+  setTimeout(()=>{
+    const dados=parseDados(texto);
+    const calc=calcularOrcamento(dados);
+
+    document.getElementById('loading').classList.remove('show');
+    document.getElementById('processar-btn').disabled=false;
+
+    const alertas=[];
+    if(!dados.nome) alertas.push('⚠️ Nome do cliente não encontrado');
+    if(!dados.data) alertas.push('⚠️ Data do evento não encontrada');
+    if(!dados.convidados) alertas.push('⚠️ Nº de convidados não encontrado — estimado para 50 pessoas');
+    if(dados.budget){
+      const bv=parseInt(dados.budget.replace(/\D/g,''));
+      if(bv&&bv<calc.total) alertas.push(`⚠️ Budget declarado (${dados.budget}) pode ser inferior ao estimado — confirmar com a cliente`);
+    }
+
+    const ab=document.getElementById('alert-box');
+    if(alertas.length){ ab.style.display='block'; ab.innerHTML=alertas.join('<br>'); }
+    else { ab.style.display='none'; }
+
+    const ficha=document.getElementById('ficha-dados');
+    const items=[
+      ['Cliente',dados.nome||'—'],['Telefone',dados.telefone||'—'],
+      ['Data do evento',dados.data||'—'],['Categoria',dados.categoria||'—'],
+      ['Cidade',dados.cidade||'—'],['Local',dados.local||'—'],
+      ['Convidados',dados.convidados||'—'],['Budget declarado',dados.budget||'—'],
+      ['Sabores',dados.sabores||'—'],['Referência',dados.referencia||'—'],
+    ];
+    ficha.innerHTML=items.map(([l,v])=>`<div class="ficha-item"><span class="ficha-label">${l}</span><span class="ficha-val">${v}</span></div>`).join('');
+
+    document.getElementById('summary-box').innerHTML=`
+      <div class="s-row"><span class="s-label">${calc.catLabel}</span><span>${fmt(calc.baseAdj)}</span></div>
+      ${calc.recheioAdd>0?`<div class="s-row"><span class="s-label">Ingredientes premium</span><span>${fmt(calc.recheioAdd)}</span></div>`:''}
+      <div class="s-row"><span class="s-label">${calc.entregaLabel}</span><span>${fmt(calc.entregaAdd)}</span></div>
+      <div class="s-row total"><span>Total estimado</span><span class="total-val">${fmt(calc.total)}</span></div>`;
+
+    orcamentoTexto=`Olá, ${dados.nome||'cliente'}! 🎂\n\nMuito obrigada por escolher a Bruna Libório Confeitaria! 🩷\n\nRecebi seu pedido e preparei o orçamento:\n\n*BRUNA LIBÓRIO CONFEITARIA*\n\n• Evento: ${dados.categoria||'—'}\n• Data: ${dados.data||'a confirmar'}\n• Convidados: ${dados.convidados||'—'} pessoas\n• Sabores: ${dados.sabores||'a definir'}\n• Entrega: ${calc.entregaLabel}${dados.endereco?' — '+dados.endereco:''}\n\n💰 *Total estimado: ${fmt(calc.total)}*\n\nPara confirmar o pedido, solicitamos 50% de entrada.\nAceitamos Pix, cartão e dinheiro. 🩷\n\nQualquer dúvida, é só chamar!`;
+
+    document.getElementById('orcamento-box').textContent=orcamentoTexto;
+    const rc=document.getElementById('result-card');
+    rc.style.display='block';
+    rc.scrollIntoView({behavior:'smooth'});
+    switchTab('ficha');
+  },900);
+}
+
+function copiarOrcamento(){
+  navigator.clipboard.writeText(orcamentoTexto).then(()=>{
+    confirmarCopia();
+  }).catch(()=>{
+    const el=document.createElement('textarea');
+    el.value=orcamentoTexto;
+    document.body.appendChild(el);
+    el.select();
+    document.execCommand('copy');
+    document.body.removeChild(el);
+    confirmarCopia();
+  });
+}
+
+function confirmarCopia(){
+  const btn=document.getElementById('copy-btn');
+  btn.textContent='✅ Copiado!';
+  setTimeout(()=>{ btn.innerHTML='📋 Copiar mensagem'; },2000);
+}
+</script>
+</body>
+</html>
