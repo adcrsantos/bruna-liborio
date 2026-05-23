@@ -195,6 +195,12 @@ function extrair(texto, chaves){
   return '';
 }
 
+function extrairDriveId(texto){
+  const re = /https:\/\/drive\.google\.com\/(?:file\/d\/|open\?id=|uc\?.*?id=)([\w-]+)/;
+  const m = texto.match(re);
+  return m ? m[1] : null;
+}
+
 function parseDados(texto){
   return {
     nome: extrair(texto,['QUAL O SEU NOME','SEU NOME']),
@@ -209,6 +215,7 @@ function parseDados(texto){
     sabores: extrair(texto,['PREFERÊNCIAS DE SABORES','SABORES','PREFERENCIAS']),
     referencia: extrair(texto,['REFERÊNCIA','REFERENCIA','INSPIRAÇÃO','INSPIRACAO']),
     como: extrair(texto,['COMO DESCOBRIU','DESCOBRIU']),
+    fotoId: extrairDriveId(texto),
   };
 }
 
@@ -304,7 +311,19 @@ function processar(){
       ['Convidados',dados.convidados||'—'],['Budget declarado',dados.budget||'—'],
       ['Sabores',dados.sabores||'—'],['Referência',dados.referencia||'—'],
     ];
-    ficha.innerHTML=items.map(([l,v])=>`<div class="ficha-item"><span class="ficha-label">${l}</span><span class="ficha-val">${v}</span></div>`).join('');
+    let fichaHTML = items.map(([l,v])=>`<div class="ficha-item"><span class="ficha-label">${l}</span><span class="ficha-val">${v}</span></div>`).join('');
+    if(dados.fotoId){
+      const thumbUrl = `https://drive.google.com/thumbnail?id=${dados.fotoId}&sz=w480`;
+      const linkUrl  = `https://drive.google.com/file/d/${dados.fotoId}/view`;
+      fichaHTML += `<div class="ficha-item" style="grid-column:1/-1;margin-top:8px">
+        <span class="ficha-label">Foto de inspiração</span>
+        <a href="${linkUrl}" target="_blank" style="display:block;margin-top:6px">
+          <img src="${thumbUrl}" alt="Inspiração" style="max-width:100%;border-radius:10px;border:1px solid #f0d0c8" onerror="this.style.display='none';this.nextSibling.style.display='inline'">
+          <span style="display:none;font-size:13px;color:#c05070">Ver foto no Google Drive →</span>
+        </a>
+      </div>`;
+    }
+    ficha.innerHTML = fichaHTML;
 
     document.getElementById('summary-box').innerHTML=`
       <div class="s-row"><span class="s-label">${calc.catLabel}</span><span>${fmt(calc.baseAdj)}</span></div>
