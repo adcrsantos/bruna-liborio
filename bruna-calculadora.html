@@ -1,0 +1,444 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Calculadora de Orçamento — Bruna Libório</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #fdf6f0; min-height: 100vh; padding: 1rem; }
+  .container { max-width: 540px; margin: 0 auto; }
+  .header { text-align: center; padding: 1.5rem 0 1rem; border-bottom: 1px solid #f0d8d0; margin-bottom: 1.5rem; }
+  .header h1 { font-size: 20px; font-weight: 600; color: #5a1a2a; margin-bottom: 4px; }
+  .header p { font-size: 13px; color: #a07080; }
+  .badge { display: inline-block; font-size: 11px; padding: 3px 10px; border-radius: 99px; background: #fce8e0; color: #a03050; border: 1px solid #f0b8b0; margin-top: 8px; }
+  .section { margin-bottom: 1.5rem; }
+  .section-title { font-size: 11px; color: #a07080; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 10px; }
+  .card { background: #fff; border: 1px solid #f0d8d0; border-radius: 16px; padding: 1rem 1.25rem; }
+  .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .field { display: flex; flex-direction: column; gap: 5px; }
+  .field label { font-size: 12px; color: #a07080; font-weight: 500; }
+  .field input, .field select, .field textarea {
+    width: 100%; padding: 9px 12px; border: 1px solid #f0d0c8; border-radius: 10px;
+    font-size: 14px; background: #fdf8f6; color: #3a1020; outline: none;
+    font-family: inherit;
+  }
+  .field input:focus, .field select:focus, .field textarea:focus { border-color: #d06080; background: #fff; }
+  .field textarea { height: 56px; resize: none; }
+  .chip-group { display: flex; flex-wrap: wrap; gap: 8px; }
+  .chip {
+    font-size: 13px; padding: 7px 14px; border-radius: 99px;
+    border: 1px solid #f0d0c8; cursor: pointer;
+    background: #fff; color: #a07080;
+    transition: all 0.12s; user-select: none;
+  }
+  .chip.active { background: #f9d0dc; border-color: #c05070; color: #5a1030; font-weight: 500; }
+  .chip:hover:not(.active) { border-color: #d09090; color: #5a1030; }
+  .hint { font-size: 11px; color: #c09090; margin-top: 6px; }
+  .summary { background: #fff; border: 1px solid #f0d8d0; border-radius: 16px; padding: 1rem 1.25rem; }
+  .s-row { display: flex; justify-content: space-between; font-size: 14px; padding: 5px 0; border-bottom: 1px solid #fae8e4; }
+  .s-row:last-child { border-bottom: none; }
+  .s-label { color: #a07080; }
+  .s-row.total { font-weight: 600; padding-top: 10px; }
+  .total-val { color: #a0304a; font-size: 22px; font-weight: 700; }
+  .btn-g {
+    width: 100%; padding: 13px; border-radius: 12px;
+    background: linear-gradient(135deg, #c05070, #a03050);
+    color: #fff; border: none; font-size: 15px; font-weight: 600;
+    cursor: pointer; margin-top: 1rem; letter-spacing: 0.02em;
+  }
+  .btn-g:hover { background: linear-gradient(135deg, #a03050, #801030); }
+  .btn-s {
+    width: 100%; padding: 10px; border-radius: 12px;
+    background: transparent; border: 1px solid #f0d0c8;
+    font-size: 13px; cursor: pointer; color: #a07080; margin-top: 8px;
+    font-family: inherit;
+  }
+  .btn-s:hover { color: #5a1030; border-color: #d09090; }
+  .output-section { display: none; margin-top: 1.5rem; }
+  .output-label { font-size: 11px; color: #a07080; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 10px; }
+  .output-box {
+    background: #fff; border: 1px solid #f0d0c8; border-radius: 14px;
+    padding: 1rem; font-size: 13px; line-height: 1.75;
+    white-space: pre-wrap; color: #3a1020; font-family: 'Courier New', monospace;
+  }
+  .copy-btn {
+    width: 100%; padding: 10px; border-radius: 12px; margin-top: 8px;
+    background: #fce8e0; border: 1px solid #f0b8b0; color: #a03050;
+    font-size: 13px; font-weight: 500; cursor: pointer; font-family: inherit;
+  }
+  .copy-btn:hover { background: #f9d0dc; }
+  .sep { height: 1px; background: #f0d8d0; margin: 0 0 1.5rem; }
+  .footer { text-align: center; font-size: 11px; color: #c09090; padding: 1.5rem 0; }
+  .mb12 { margin-bottom: 12px; }
+  @media(max-width:400px){ .row2 { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="header">
+    <h1>🎂 Bruna Libório Confeitaria</h1>
+    <p>Calculadora de orçamento</p>
+    <span class="badge">uso interno · calculadora</span>
+  </div>
+
+  <div class="section">
+    <div class="section-title">Cliente e evento</div>
+    <div class="card">
+      <div class="row2 mb12">
+        <div class="field"><label>Nome do cliente</label><input type="text" id="cliente" placeholder="Ex: Ana Lima" /></div>
+        <div class="field"><label>Data do evento</label><input type="date" id="data_evento" /></div>
+      </div>
+      <div class="row2">
+        <div class="field"><label>Ocasião</label>
+          <select id="ocasiao">
+            <option value="">Selecione</option>
+            <option>Casamento</option>
+            <option>Noivado</option>
+            <option>Aniversário infantil</option>
+            <option>1º aninho</option>
+            <option>Aniversário adulto</option>
+            <option>Chá de bebê</option>
+            <option>Chá revelação</option>
+            <option>Formatura</option>
+            <option>Corporativo / show</option>
+            <option>Almoço / janta / ceia</option>
+            <option>Café da manhã / coffe break</option>
+            <option>Páscoa</option>
+            <option>Natal</option>
+            <option>Festa junina</option>
+            <option>Outro</option>
+          </select>
+        </div>
+        <div class="field"><label>Entrega</label>
+          <select id="cidade">
+            <option value="0">Retirada — Lagarto</option>
+            <option value="40">Entrega em Lagarto (+R$ 40)</option>
+            <option value="80">Entrega em Aracaju (+R$ 80)</option>
+            <option value="0">Outra cidade (a combinar)</option>
+          </select>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">Categoria do pedido</div>
+    <div class="chip-group" id="cat-chips">
+      <div class="chip active" data-cat="bolo">Bolo personalizado</div>
+      <div class="chip" data-cat="mesa">Mesa de doces</div>
+      <div class="chip" data-cat="buffet">Buffet de doces</div>
+      <div class="chip" data-cat="pascoa">Ovos de Páscoa</div>
+      <div class="chip" data-cat="finos">Doces finos / bombons</div>
+      <div class="chip" data-cat="combo">Bolo + mesa</div>
+    </div>
+  </div>
+
+  <div id="bolo-opts">
+    <div class="section">
+      <div class="section-title">Tipo de bolo</div>
+      <div class="chip-group" id="tipo-chips">
+        <div class="chip active" data-base="320">Decorado</div>
+        <div class="chip" data-base="240">Naked cake</div>
+        <div class="chip" data-base="180">Simples</div>
+        <div class="chip" data-base="480">Casamento</div>
+        <div class="chip" data-base="560">Andares / torre</div>
+      </div>
+    </div>
+    <div class="section">
+      <div class="section-title">Porções estimadas</div>
+      <div class="chip-group" id="porcao-chips">
+        <div class="chip" data-pm="0.8">Até 15</div>
+        <div class="chip active" data-pm="1.35">20 a 30</div>
+        <div class="chip" data-pm="1.75">30 a 50</div>
+        <div class="chip" data-pm="2.2">50 a 80</div>
+        <div class="chip" data-pm="2.8">80 a 120</div>
+        <div class="chip" data-pm="3.8">120+ pessoas</div>
+      </div>
+    </div>
+    <div class="section">
+      <div class="section-title">Recheios (máx. 2)</div>
+      <div class="chip-group" id="recheio-chips">
+        <div class="chip" data-r="Brigadeiro" data-ra="0">Brigadeiro</div>
+        <div class="chip" data-r="Leite Ninho" data-ra="20">Ninho</div>
+        <div class="chip" data-r="Morango c/ nata" data-ra="20">Morango c/ nata</div>
+        <div class="chip" data-r="Limão" data-ra="15">Limão</div>
+        <div class="chip" data-r="Maracujá" data-ra="15">Maracujá</div>
+        <div class="chip" data-r="Nutella" data-ra="40">Nutella (+R$40)</div>
+        <div class="chip" data-r="Prestígio" data-ra="25">Prestígio (+R$25)</div>
+        <div class="chip" data-r="Ferrero Rocher" data-ra="50">Ferrero (+R$50)</div>
+        <div class="chip" data-r="Chocolate belga" data-ra="55">Choc. belga (+R$55)</div>
+      </div>
+      <p class="hint">Máximo 2 recheios. Toque novamente para desmarcar.</p>
+    </div>
+    <div class="section">
+      <div class="section-title">Cobertura</div>
+      <div class="chip-group" id="cob-chips">
+        <div class="chip active" data-c="Chantilly" data-ca="0">Chantilly</div>
+        <div class="chip" data-c="Buttercream" data-ca="45">Buttercream (+R$45)</div>
+        <div class="chip" data-c="Pasta americana" data-ca="55">Pasta americana (+R$55)</div>
+        <div class="chip" data-c="Ganache" data-ca="50">Ganache (+R$50)</div>
+        <div class="chip" data-c="Sem cobertura" data-ca="0">Sem cobertura</div>
+      </div>
+    </div>
+    <div class="section">
+      <div class="section-title">Nível de personalização</div>
+      <div class="chip-group" id="deco-chips">
+        <div class="chip" data-d="Básica" data-da="0">Básica</div>
+        <div class="chip active" data-d="Temática média" data-da="70">Temática média</div>
+        <div class="chip" data-d="Temática elaborada" data-da="150">Temática elaborada</div>
+        <div class="chip" data-d="Premium / luxo" data-da="280">Premium / luxo</div>
+      </div>
+    </div>
+  </div>
+
+  <div id="mesa-opts" style="display:none">
+    <div class="section">
+      <div class="section-title">Porte da mesa</div>
+      <div class="chip-group" id="mesa-chips">
+        <div class="chip active" data-mb="280" data-mn="Pequena — até 50 peças">Pequena — até 50 peças</div>
+        <div class="chip" data-mb="480" data-mn="Média — 50 a 100 peças">Média — 50 a 100 peças</div>
+        <div class="chip" data-mb="780" data-mn="Grande — 100 a 200 peças">Grande — 100 a 200 peças</div>
+        <div class="chip" data-mb="1400" data-mn="Buffet — 200+ peças">Buffet — 200+ peças</div>
+      </div>
+    </div>
+  </div>
+
+  <div id="pascoa-opts" style="display:none">
+    <div class="section">
+      <div class="section-title">Tipo de ovo</div>
+      <div class="chip-group" id="pascoa-chips">
+        <div class="chip active" data-ovb="45" data-ovn="Ovo artesanal 150g">Artesanal 150g</div>
+        <div class="chip" data-ovb="70" data-ovn="Ovo artesanal 250g">Artesanal 250g</div>
+        <div class="chip" data-ovb="110" data-ovn="Ovo chocolate belga 250g">Choc. belga 250g</div>
+        <div class="chip" data-ovb="140" data-ovn="Ovo trufado 350g">Trufado 350g</div>
+      </div>
+    </div>
+    <div class="section">
+      <div class="section-title">Quantidade</div>
+      <div class="field" style="max-width:140px">
+        <label>Unidades</label>
+        <input type="number" id="qtd-ovo" min="1" value="1" />
+      </div>
+    </div>
+  </div>
+
+  <div id="finos-opts" style="display:none">
+    <div class="section">
+      <div class="section-title">Quantidade</div>
+      <div class="chip-group" id="finos-chips">
+        <div class="chip active" data-fib="180" data-fin="50 peças">50 peças</div>
+        <div class="chip" data-fib="320" data-fin="100 peças">100 peças</div>
+        <div class="chip" data-fib="580" data-fin="200 peças">200 peças</div>
+        <div class="chip" data-fib="800" data-fin="300 peças">300 peças</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">Tema / observações</div>
+    <textarea id="obs" placeholder="Ex: tema Magali, cores rosa e dourado, escrita personalizada..."></textarea>
+  </div>
+
+  <div class="sep"></div>
+
+  <div class="section">
+    <div class="section-title">Resumo do orçamento</div>
+    <div class="summary">
+      <div class="s-row"><span class="s-label">Produto base</span><span id="s-base">R$ 320,00</span></div>
+      <div class="s-row"><span class="s-label">Porções / tamanho</span><span id="s-porcao">R$ 112,00</span></div>
+      <div class="s-row"><span class="s-label">Recheio(s)</span><span id="s-recheio">R$ 0,00</span></div>
+      <div class="s-row"><span class="s-label">Cobertura</span><span id="s-cob">R$ 0,00</span></div>
+      <div class="s-row"><span class="s-label">Personalização</span><span id="s-deco">R$ 70,00</span></div>
+      <div class="s-row"><span class="s-label">Entrega</span><span id="s-entrega">R$ 0,00</span></div>
+      <div class="s-row total"><span>Total estimado</span><span class="total-val" id="s-total">R$ 502,00</span></div>
+    </div>
+    <p class="hint" style="margin-top:8px">* Valores de referência — confirmar com Bruna antes do uso</p>
+  </div>
+
+  <button class="btn-g" onclick="gerarOrcamento()">Gerar orçamento para WhatsApp</button>
+
+  <div class="output-section" id="output-section">
+    <div class="output-label">Mensagem pronta para WhatsApp</div>
+    <div class="output-box" id="output-box"></div>
+    <button class="copy-btn" id="copy-btn" onclick="copiar()">📋 Copiar mensagem</button>
+  </div>
+
+  <div class="footer">Bruna Libório Confeitaria · ferramenta interna · v1</div>
+</div>
+
+<script>
+let cat = 'bolo';
+let tipoBase = 320;
+let porcaoMult = 1.35;
+let recheios = [];
+let cobAdd = 0; let cobNome = 'Chantilly';
+let decoAdd = 70; let decoNome = 'Temática média';
+let mesaBase = 280; let mesaNome = 'Pequena — até 50 peças';
+let ovBase = 45; let ovNome = 'Ovo artesanal 150g';
+let fiBase = 180; let fiNome = '50 peças';
+
+function fmt(v){ return 'R$ ' + Math.round(v).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2}); }
+
+function showOpts(){
+  document.getElementById('bolo-opts').style.display = (cat==='bolo'||cat==='combo') ? '' : 'none';
+  document.getElementById('mesa-opts').style.display = (cat==='mesa'||cat==='buffet'||cat==='combo') ? '' : 'none';
+  document.getElementById('pascoa-opts').style.display = cat==='pascoa' ? '' : 'none';
+  document.getElementById('finos-opts').style.display = cat==='finos' ? '' : 'none';
+}
+
+function calcTotal(){
+  let base=0, porcao=0, recheioA=0, cobA=cobAdd, decoA=decoAdd;
+  const entrega = parseInt(document.getElementById('cidade').value)||0;
+
+  if(cat==='bolo'){
+    base=tipoBase; porcao=Math.round(base*(porcaoMult-1));
+    recheioA=recheios.reduce((s,r)=>s+r.add,0);
+  } else if(cat==='mesa'||cat==='buffet'){
+    base=mesaBase; cobA=0; decoA=0;
+  } else if(cat==='pascoa'){
+    const q=parseInt(document.getElementById('qtd-ovo').value)||1;
+    base=ovBase*q; cobA=0; decoA=0;
+  } else if(cat==='finos'){
+    base=fiBase; cobA=0; decoA=0;
+  } else if(cat==='combo'){
+    base=tipoBase+mesaBase; porcao=Math.round(tipoBase*(porcaoMult-1));
+    recheioA=recheios.reduce((s,r)=>s+r.add,0);
+  }
+
+  const total=base+porcao+recheioA+cobA+decoA+entrega;
+  document.getElementById('s-base').textContent=fmt(base);
+  document.getElementById('s-porcao').textContent=fmt(porcao);
+  document.getElementById('s-recheio').textContent=fmt(recheioA);
+  document.getElementById('s-cob').textContent=fmt(cobA);
+  document.getElementById('s-deco').textContent=fmt(decoA);
+  document.getElementById('s-entrega').textContent=fmt(entrega);
+  document.getElementById('s-total').textContent=fmt(total);
+  return total;
+}
+
+document.querySelectorAll('#cat-chips .chip').forEach(c=>{
+  c.addEventListener('click',()=>{
+    document.querySelectorAll('#cat-chips .chip').forEach(x=>x.classList.remove('active'));
+    c.classList.add('active'); cat=c.dataset.cat; showOpts(); calcTotal();
+  });
+});
+document.querySelectorAll('#tipo-chips .chip').forEach(c=>{
+  c.addEventListener('click',()=>{
+    document.querySelectorAll('#tipo-chips .chip').forEach(x=>x.classList.remove('active'));
+    c.classList.add('active'); tipoBase=parseInt(c.dataset.base); calcTotal();
+  });
+});
+document.querySelectorAll('#porcao-chips .chip').forEach(c=>{
+  c.addEventListener('click',()=>{
+    document.querySelectorAll('#porcao-chips .chip').forEach(x=>x.classList.remove('active'));
+    c.classList.add('active'); porcaoMult=parseFloat(c.dataset.pm); calcTotal();
+  });
+});
+document.querySelectorAll('#recheio-chips .chip').forEach(c=>{
+  c.addEventListener('click',()=>{
+    if(c.classList.contains('active')){
+      c.classList.remove('active');
+      recheios=recheios.filter(r=>r.nome!==c.dataset.r);
+    } else {
+      if(recheios.length>=2) return;
+      c.classList.add('active');
+      recheios.push({nome:c.dataset.r,add:parseInt(c.dataset.ra)});
+    }
+    calcTotal();
+  });
+});
+document.querySelectorAll('#cob-chips .chip').forEach(c=>{
+  c.addEventListener('click',()=>{
+    document.querySelectorAll('#cob-chips .chip').forEach(x=>x.classList.remove('active'));
+    c.classList.add('active'); cobAdd=parseInt(c.dataset.ca); cobNome=c.dataset.c; calcTotal();
+  });
+});
+document.querySelectorAll('#deco-chips .chip').forEach(c=>{
+  c.addEventListener('click',()=>{
+    document.querySelectorAll('#deco-chips .chip').forEach(x=>x.classList.remove('active'));
+    c.classList.add('active'); decoAdd=parseInt(c.dataset.da); decoNome=c.dataset.d; calcTotal();
+  });
+});
+document.querySelectorAll('#mesa-chips .chip').forEach(c=>{
+  c.addEventListener('click',()=>{
+    document.querySelectorAll('#mesa-chips .chip').forEach(x=>x.classList.remove('active'));
+    c.classList.add('active'); mesaBase=parseInt(c.dataset.mb); mesaNome=c.dataset.mn; calcTotal();
+  });
+});
+document.querySelectorAll('#pascoa-chips .chip').forEach(c=>{
+  c.addEventListener('click',()=>{
+    document.querySelectorAll('#pascoa-chips .chip').forEach(x=>x.classList.remove('active'));
+    c.classList.add('active'); ovBase=parseInt(c.dataset.ovb); ovNome=c.dataset.ovn; calcTotal();
+  });
+});
+document.querySelectorAll('#finos-chips .chip').forEach(c=>{
+  c.addEventListener('click',()=>{
+    document.querySelectorAll('#finos-chips .chip').forEach(x=>x.classList.remove('active'));
+    c.classList.add('active'); fiBase=parseInt(c.dataset.fib); fiNome=c.dataset.fin; calcTotal();
+  });
+});
+document.getElementById('cidade').addEventListener('change',calcTotal);
+document.getElementById('qtd-ovo').addEventListener('input',calcTotal);
+
+let orcamentoTexto='';
+
+function gerarOrcamento(){
+  const cliente=document.getElementById('cliente').value||'Cliente';
+  const dataEvento=document.getElementById('data_evento').value;
+  const ocasiao=document.getElementById('ocasiao').value||'evento';
+  const obs=document.getElementById('obs').value;
+  const cidadeEl=document.getElementById('cidade');
+  const cidadeTxt=cidadeEl.options[cidadeEl.selectedIndex].text;
+  const total=calcTotal();
+  const dataFmt=dataEvento ? new Date(dataEvento+'T12:00:00').toLocaleDateString('pt-BR') : 'a confirmar';
+
+  let detalhes='';
+  const tipoNome=document.querySelector('#tipo-chips .chip.active')?.textContent||'';
+  const porcaoNome=document.querySelector('#porcao-chips .chip.active')?.textContent||'';
+  const recheiosNome=recheios.map(r=>r.nome).join(' + ')||'a definir';
+
+  if(cat==='bolo'){
+    detalhes+=`• Bolo: ${tipoNome}\n• Porções: ${porcaoNome} pessoas\n• Recheio(s): ${recheiosNome}\n• Cobertura: ${cobNome}\n• Personalização: ${decoNome}\n`;
+  } else if(cat==='mesa'||cat==='buffet'){
+    detalhes+=`• Mesa de doces: ${mesaNome}\n`;
+  } else if(cat==='pascoa'){
+    const q=parseInt(document.getElementById('qtd-ovo').value)||1;
+    detalhes+=`• Produto: ${ovNome} × ${q} unidade(s)\n`;
+  } else if(cat==='finos'){
+    detalhes+=`• Doces finos: ${fiNome}\n`;
+  } else if(cat==='combo'){
+    detalhes+=`• Bolo: ${tipoNome} — ${porcaoNome} pessoas\n• Recheio(s): ${recheiosNome}\n• Cobertura: ${cobNome}\n• Mesa de doces: ${mesaNome}\n`;
+  }
+
+  orcamentoTexto=`Olá, ${cliente}! 🎂\n\nMuito obrigada por escolher a Bruna Libório Confeitaria! 🩷\n\nSegue seu orçamento:\n\n*BRUNA LIBÓRIO CONFEITARIA*\n\n• Ocasião: ${ocasiao}\n• Data: ${dataFmt}\n${detalhes}• Entrega: ${cidadeTxt}\n${obs?'• Obs: '+obs+'\n':''}\n💰 *Total estimado: ${fmt(total)}*\n\nPara confirmar o pedido, solicitamos 50% de entrada.\nAceitamos Pix, cartão e dinheiro. 🩷\n\nQualquer dúvida, é só chamar!`;
+
+  document.getElementById('output-box').textContent=orcamentoTexto;
+  const sec=document.getElementById('output-section');
+  sec.style.display='block';
+  sec.scrollIntoView({behavior:'smooth'});
+}
+
+function copiar(){
+  navigator.clipboard.writeText(orcamentoTexto).then(()=>{
+    const btn=document.getElementById('copy-btn');
+    btn.textContent='✅ Copiado!';
+    setTimeout(()=>{ btn.textContent='📋 Copiar mensagem'; },2000);
+  }).catch(()=>{
+    const box=document.getElementById('output-box');
+    const range=document.createRange();
+    range.selectNode(box);
+    window.getSelection().removeAllRanges();
+    window.getSelection().addRange(range);
+    document.execCommand('copy');
+    window.getSelection().removeAllRanges();
+    const btn=document.getElementById('copy-btn');
+    btn.textContent='✅ Copiado!';
+    setTimeout(()=>{ btn.textContent='📋 Copiar mensagem'; },2000);
+  });
+}
+
+showOpts(); calcTotal();
+</script>
+</body>
+</html>
